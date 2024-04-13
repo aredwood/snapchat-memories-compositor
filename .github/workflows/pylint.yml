@@ -22,4 +22,7 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py') --errors-only
+    - name: run # this just makes sure there are no syntax errors
+      run: |
+        python3 ./composite.py
 
