@@ -89,32 +89,33 @@ for overlay in overlays:
         mp4_probe = ffmpeg.probe(mp4_path)
 
         video_streams = [
-                stream for stream in mp4_probe["streams"] 
+                stream for stream in mp4_probe["streams"]
                 if stream['codec_type'] == 'video'
         ]
 
-        if (len(video_streams) != 1):
+        if len(video_streams) != 1:
             raise Exception(f"UNABLE_TO_FIND_STREAM: {memory_id}")
 
         mp4_stream = video_streams[0]
 
-        # we need to check display matrix to get the rotation of the video, 
+        # we need to check display matrix to get the rotation of the video,
         # so we know whether its height x width or width x height.
         # if this fails, just assume the video is rotated.
         rotated = True
         try:
-            display_matrix = [side_data for side_data in mp4_stream["side_data_list"] if side_data["side_data_type"] == "Display Matrix"][0]
+            display_matrix = [
+                side_data for side_data in mp4_stream["side_data_list"] 
+                if side_data["side_data_type"] == "Display Matrix"
+            ][0]
 
             rotation = display_matrix["rotation"]
 
-            # if we can get the display matrix, 
-            # check if its rotated by 90 deg, 
+            # if we can get the display matrix,
+            # check if its rotated by 90 deg,
             # 180 deg doesn't matter because the dimensions remain the same
             rotated = abs(rotation / 90) % 2 == 1
         except:
             pass;
-
-
 
         if rotated:
             mp4_dimemsions = {
