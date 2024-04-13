@@ -24,5 +24,6 @@ jobs:
         pylint $(git ls-files '*.py') --errors-only
     - name: run # this just makes sure there are no syntax errors
       run: |
+        mkdir memories
         python3 ./composite.py
 
