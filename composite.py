@@ -58,7 +58,7 @@ for file in memories_files:
             invalid_file = False
     if invalid_file:
         raise Exception("UNSUPPORTED_FILE: " + file)
-    
+
 # get all overlay files
 overlays = list(filter(lambda x : "overlay" in x, memories_files))
 
@@ -67,7 +67,7 @@ for overlay in overlays:
     # which is all files that contain everything before "-overlay"
     # that are not this file
     memory_id = overlay.split("-overlay")[0]
-    
+
     # as opposed to searching the array, which could be inefficient,
     # its probably faster to just test for an mp4 and a jpg,
     # and see which one hits
@@ -87,13 +87,16 @@ for overlay in overlays:
 
         # get the size of the video
         mp4_probe = ffmpeg.probe(mp4_path)
-        
-        video_streams = [stream for stream in mp4_probe["streams"] if stream['codec_type'] == 'video']
+
+        video_streams = [
+                stream for stream in mp4_probe["streams"] 
+                if stream['codec_type'] == 'video'
+        ]
 
         if (len(video_streams) != 1):
             raise Exception(f"UNABLE_TO_FIND_STREAM: {memory_id}")
 
-        mp4_stream = video_streams[0];
+        mp4_stream = video_streams[0]
 
         # we need to check display matrix to get the rotation of the video, 
         # so we know whether its height x width or width x height.
