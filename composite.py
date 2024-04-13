@@ -125,8 +125,6 @@ for overlay in overlays:
             }
 
 
-        print(mp4_dimemsions)
-
         overlay_path_tmp = overlay_path + ".tmp.png"
 
 
