@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+    Composite overlay and main files from Snapchat's memory data.
+"""
 import os
 import subprocess
 import ffmpeg
@@ -58,7 +61,7 @@ for file in memories_files:
             invalid_file = False
     if invalid_file:
         raise Exception("UNSUPPORTED_FILE: " + file)
-    
+
 # get all overlay files
 overlays = list(filter(lambda x : "overlay" in x, memories_files))
 
@@ -67,7 +70,7 @@ for overlay in overlays:
     # which is all files that contain everything before "-overlay"
     # that are not this file
     memory_id = overlay.split("-overlay")[0]
-    
+
     # as opposed to searching the array, which could be inefficient,
     # its probably faster to just test for an mp4 and a jpg,
     # and see which one hits
@@ -87,31 +90,35 @@ for overlay in overlays:
 
         # get the size of the video
         mp4_probe = ffmpeg.probe(mp4_path)
-        
-        video_streams = [stream for stream in mp4_probe["streams"] if stream['codec_type'] == 'video']
 
-        if (len(video_streams) != 1):
+        video_streams = [
+                stream for stream in mp4_probe["streams"]
+                if stream['codec_type'] == 'video'
+        ]
+
+        if len(video_streams) != 1:
             raise Exception(f"UNABLE_TO_FIND_STREAM: {memory_id}")
 
-        mp4_stream = video_streams[0];
+        mp4_stream = video_streams[0]
 
-        # we need to check display matrix to get the rotation of the video, 
+        # we need to check display matrix to get the rotation of the video,
         # so we know whether its height x width or width x height.
         # if this fails, just assume the video is rotated.
         rotated = True
         try:
-            display_matrix = [side_data for side_data in mp4_stream["side_data_list"] if side_data["side_data_type"] == "Display Matrix"][0]
+            display_matrix = [
+                side_data for side_data in mp4_stream["side_data_list"]
+                if side_data["side_data_type"] == "Display Matrix"
+            ][0]
 
             rotation = display_matrix["rotation"]
 
-            # if we can get the display matrix, 
-            # check if its rotated by 90 deg, 
+            # if we can get the display matrix,
+            # check if its rotated by 90 deg,
             # 180 deg doesn't matter because the dimensions remain the same
             rotated = abs(rotation / 90) % 2 == 1
         except:
-            pass;
-
-
+            pass
 
         if rotated:
             mp4_dimemsions = {
@@ -163,4 +170,3 @@ for overlay in overlays:
         composite_images(overlay_path_tmp, main_path, composite_path)
 
         os.remove(overlay_path_tmp)
-        pass
