@@ -88,12 +88,12 @@ for overlay in overlays:
         # get the size of the video
         mp4_probe = ffmpeg.probe(mp4_path)
         
-        h264_streams = [stream for stream in mp4_probe["streams"] if stream['codec_name'] == 'h264']
+        video_streams = [stream for stream in mp4_probe["streams"] if stream['codec_type'] == 'video']
 
-        if (len(h264_streams) != 1):
-            raise Exception("UNABLE_TO_FIND_STREAM")
+        if (len(video_streams) != 1):
+            raise Exception(f"UNABLE_TO_FIND_STREAM: {memory_id}")
 
-        mp4_stream = h264_streams[0];
+        mp4_stream = video_streams[0];
 
         # we need to check display matrix to get the rotation of the video, 
         # so we know whether its height x width or width x height.
