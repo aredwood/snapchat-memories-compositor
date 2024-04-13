@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+    Composite overlay and main files from Snapchat's memory data.
+"""
 import os
 import subprocess
 import ffmpeg
@@ -104,7 +107,7 @@ for overlay in overlays:
         rotated = True
         try:
             display_matrix = [
-                side_data for side_data in mp4_stream["side_data_list"] 
+                side_data for side_data in mp4_stream["side_data_list"]
                 if side_data["side_data_type"] == "Display Matrix"
             ][0]
 
@@ -115,7 +118,7 @@ for overlay in overlays:
             # 180 deg doesn't matter because the dimensions remain the same
             rotated = abs(rotation / 90) % 2 == 1
         except:
-            pass;
+            pass
 
         if rotated:
             mp4_dimemsions = {
