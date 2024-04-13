@@ -170,4 +170,3 @@ for overlay in overlays:
         composite_images(overlay_path_tmp, main_path, composite_path)
 
         os.remove(overlay_path_tmp)
-        pass
