@@ -107,7 +107,10 @@ for file in memories_files_raw:
     elif os.path.isdir(f'./memories/{file}'):
         print(f"'./memories/{file}' is a directory. Skipping...")
     else:
-        raise Exception("UNSUPPORTED_FILE: " + f'./memories/{file}')
+        # since we filter the files that are parsed,
+        # there should be no need to throw an exception
+        # and halt the script
+        print("UNSUPPORTED_FILE: " + f'./memories/{file}')
 
 file_count = len(memories_files_filtered)
 print(f"You have {file_count} files to process. Beginning...")
