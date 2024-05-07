@@ -5,9 +5,19 @@
 import os
 import subprocess
 import ffmpeg
+import shutil
+import platform
+from pathlib import Path
+
+def run_subprocess(commands,capture_output = False):
+    is_windows = platform.system == "Windows"
+
+    return subprocess.run(commands,shell=is_windows,capture_output=capture_output)
+
 
 def resize_image(image_path, dimensions, new_file):
-    subprocess.run([
+
+    resize_image_command = [
         # magick convert ./memories/A-overlay.png -resize 998x1920 new.png
         "magick",
         "convert",
@@ -15,16 +25,22 @@ def resize_image(image_path, dimensions, new_file):
         "-resize",
         str(dimensions["width"]) + "x" + str(dimensions["height"]),
         new_file
-    ])
+    ]
+
+    return run_subprocess(resize_image_command)
+
 
 def get_image_size(image_path):
-    result = subprocess.run([
-        "magick",
-        "identify",
-        "-format",
-        "%w %h",
-        image_path
-    ],capture_output=True)
+    
+    get_image_command = [
+            "magick",
+            "identify",
+            "-format",
+            "%w %h",
+            image_path
+    ]
+
+    result = run_subprocess(get_image_command,capture_output=True)
 
     result_string = result.stdout.decode("utf8")
 
@@ -35,37 +51,56 @@ def get_image_size(image_path):
 
 def composite_images(overlay_path, main_path, new_file):
     # magick composite new.png ./memories/A-main.jpg -compose over -gravity center composite.png
-    subprocess.run([
-        "magick",
-        "composite",
-        overlay_path,
-        main_path,
-        "-compose",
-        "over",
-        "-gravity",
-        "center",
-        new_file
-    ])
+    composite_image_command = [
+            "magick",
+            "composite",
+            overlay_path,
+            main_path,
+            "-compose",
+            "over",
+            "-gravity",
+            "center",
+            new_file
+    ]
+
+    return run_subprocess(composite_image_command)
+
+
+def move_composited_file(old_file_path, new_path):
+    # should the composited directory not exist, make it
+    # then move the composited file into it. Helps
+    # with file organization
+    Path("./memories/composited").mkdir(parents=True, exist_ok=True)
+    shutil.move(old_file_path, new_path)
 
 # list the files in the memories folder
-memories_files = os.listdir("./memories")
+memories_files_raw = os.listdir("./memories")
+memories_files_filtered = []
 
 # loop over each one, ensuring that there are only supported filetypes
 supported_file_types = [".jpg",".png",".mp4"]
 
-# TODO optimize
-for file in memories_files:
-    invalid_file = True
-    for supported_file_type in supported_file_types:
-        if file.endswith(supported_file_type):
-            invalid_file = False
-    if invalid_file:
-        raise Exception("UNSUPPORTED_FILE: " + file)
+# TODO optimize further
+for file in memories_files_raw:
+    file_path, file_extension = os.path.splitext(file)
+    if os.path.isfile(f'./memories/{file}') and file_extension in supported_file_types:
+        memories_files_filtered.append(file)
+    elif os.path.isdir(f'./memories/{file}'):
+        print(f"'./memories/{file}' is a directory. Skipping...")
+    else:
+        # since we filter the files that are parsed,
+        # there should be no need to throw an exception
+        # and halt the script
+        print("UNSUPPORTED_FILE: " + f'./memories/{file}')
+
+file_count = len(memories_files_filtered)
+print(f"You have {file_count} files to process. Beginning...")
 
 # get all overlay files
-overlays = list(filter(lambda x : "overlay" in x, memories_files))
+overlays = list(filter(lambda x : "overlay" in x, memories_files_filtered))
 
-for overlay in overlays:
+for index, overlay in enumerate(overlays):
+    print(f'Processing file {overlay} ({index}/{len(overlays)})')
     # get the corresponding file
     # which is all files that contain everything before "-overlay"
     # that are not this file
@@ -85,8 +120,7 @@ for overlay in overlays:
 
     # we need to use ffmpeg to apply the overlay to a video
     if mp4_exists:
-
-        mp4_path = f"./memories/{memory_id}-main.mp4"
+        mp4_path = fr"./memories/{memory_id}-main.mp4"
 
         # get the size of the video
         mp4_probe = ffmpeg.probe(mp4_path)
@@ -138,6 +172,7 @@ for overlay in overlays:
 
         # resize the overlay
         resize_image(overlay_path,mp4_dimemsions,overlay_path_tmp)
+        composite_path = f"./memories/{memory_id}-composite.mp4"
 
         # apply the overlay to the video
         ffmpeg.filter(
@@ -146,10 +181,15 @@ for overlay in overlays:
                 ffmpeg.input(overlay_path_tmp)
             ],
             'overlay'
-        ).output(f"./memories/{memory_id}-composite.mp4",loglevel="quiet").overwrite_output().run()
+        ).output(composite_path,loglevel="quiet").overwrite_output().run()
 
 
         os.remove(overlay_path_tmp)
+        
+        finalized_path = f"./memories/composited/{memory_id}-composite.mp4"
+
+        move_composited_file(composite_path, finalized_path)
+
 
     # we need to use image magick to apply the overlay to a picture
     if jpg_exists:
@@ -164,9 +204,12 @@ for overlay in overlays:
         # resize the overlay to be the same size as the main
         overlay_path_tmp = overlay_path + ".tmp.png"
         composite_path = f"./memories/{memory_id}-composite.jpg"
+        finalized_path = f"./memories/composited/{memory_id}-composite.jpg"
 
         resize_image(overlay_path, main_size, overlay_path_tmp)
 
         composite_images(overlay_path_tmp, main_path, composite_path)
 
         os.remove(overlay_path_tmp)
+        
+        move_composited_file(composite_path, finalized_path)
