@@ -9,46 +9,38 @@ import shutil
 import platform
 from pathlib import Path
 
+def run_subprocess(commands,capture_output = False):
+    is_windows = platform.system == "Windows"
+
+    return subprocess.run(commands,shell=is_windows,capture_output=capture_output)
+
+
 def resize_image(image_path, dimensions, new_file):
-    if platform.system == 'Windows':
-        subprocess.run([
-            # magick convert ./memories/A-overlay.png -resize 998x1920 new.png
-            "magick",
-            "convert",
-            image_path,
-            "-resize",
-            str(dimensions["width"]) + "x" + str(dimensions["height"]),
-            new_file
-        ], shell=True)
-    else:   
-        subprocess.run([
-            # magick convert ./memories/A-overlay.png -resize 998x1920 new.png
-            "magick",
-            "convert",
-            image_path,
-            "-resize",
-            str(dimensions["width"]) + "x" + str(dimensions["height"]),
-            new_file
-        ])
+
+    resize_image_command = [
+        # magick convert ./memories/A-overlay.png -resize 998x1920 new.png
+        "magick",
+        "convert",
+        image_path,
+        "-resize",
+        str(dimensions["width"]) + "x" + str(dimensions["height"]),
+        new_file
+    ]
+
+    return run_subprocess(resize_image_command)
 
 
 def get_image_size(image_path):
-    if platform.system == 'Windows':
-        result = subprocess.run([
+    
+    get_image_command = [
             "magick",
             "identify",
             "-format",
             "%w %h",
             image_path
-        ],capture_output=True, shell=True)
-    else:
-        result = subprocess.run([
-            "magick",
-            "identify",
-            "-format",
-            "%w %h",
-            image_path
-        ],capture_output=True)
+    ]
+
+    result = run_subprocess(get_image_command,capture_output=True)
 
     result_string = result.stdout.decode("utf8")
 
@@ -59,8 +51,7 @@ def get_image_size(image_path):
 
 def composite_images(overlay_path, main_path, new_file):
     # magick composite new.png ./memories/A-main.jpg -compose over -gravity center composite.png
-    if platform.system() == "Windows":
-        subprocess.run([
+    composite_image_command = [
             "magick",
             "composite",
             overlay_path,
@@ -70,19 +61,9 @@ def composite_images(overlay_path, main_path, new_file):
             "-gravity",
             "center",
             new_file
-        ], shell=True)
-    else:
-        subprocess.run([
-            "magick",
-            "composite",
-            overlay_path,
-            main_path,
-            "-compose",
-            "over",
-            "-gravity",
-            "center",
-            new_file
-        ])
+    ]
+
+    return run_subprocess(composite_image_command)
 
 
 def move_composited_file(old_file_path, new_path):
